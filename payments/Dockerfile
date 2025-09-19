@@ -1,4 +1,4 @@
-FROM node:14.4.0-alpine3.11
+FROM node:22-alpine3.21
 
 RUN mkdir -p /opt/sns/app && \
     mkdir -p /opt/sns/logs && \

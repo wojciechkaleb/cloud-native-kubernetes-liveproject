@@ -3,7 +3,15 @@ const express = require("express")
 const pino = require('pino')
 
 const config = require("./config")()
-const logger = pino(pino.destination(config.log_file))
+
+const logger = pino({
+    transport: {
+        targets: [
+            { level: 'info', target: 'pino-pretty', options: { destination: config.log_file } },
+            { level: 'info', target: 'pino-pretty'} ,
+        ],
+    }
+})
 
 const app = express();
 

@@ -17,15 +17,40 @@ spec:
     spec:
       containers:
       - name: payment
-        image: sns-payment:latest
+        image: sns-payment:v1.0.2
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: 500m
+          requests:
+            memory: 128Mi
+            cpu: 100m
         ports:
         - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
         env:
           - name: NODE_ENV
             value: "production"
           - name: CONFIG_DIR
             value: "/opt/sns/app/config"
-        imagePullPolicy: "Never"
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: redis_password
 ---
 apiVersion: v1
 kind: Service

@@ -2,5 +2,6 @@
     "server_port": 3000,
     "redis_host": "redis",
     "redis_port": 6379,
+    "redis_password": "admin",
     "log_file": "/opt/sns/logs/logfile.txt"
 }

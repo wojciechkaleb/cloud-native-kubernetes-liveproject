@@ -8,4 +8,5 @@ resources:
 - ns.yaml
 - redis.yaml
 - payment.yaml
+- redis-secret.yaml
 
