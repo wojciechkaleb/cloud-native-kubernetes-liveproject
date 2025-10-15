@@ -1,0 +1,24 @@
+resources:
+- ../../base
+- namespace.yaml
+
+namespace: sns-production
+
+patches:
+- path: payment.yaml
+- path: subscriptions.yaml
+
+configMapGenerator:
+  - name: subscriptions-config
+    files:
+    - files/subscriptions.config.json
+  - name: payments-config
+    files:
+    - files/payments.config.json
+
+
+secretGenerator:
+  - name: redis-secret
+    literals:
+      - redis_config=requirepass prod_password
+      - redis_password=prod_password

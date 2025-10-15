@@ -22,9 +22,9 @@ const loadRepositories = require("./repositories")
 const loadControllers = require("./controllers")
 
 const repositories = loadRepositories(config)
-loadControllers(app, repositories, logger)
+loadControllers(app, repositories, logger, config)
 
 const server_port = config.server_port
 app.listen(server_port, () => {
-    logger.info(`Server is running on port ${server_port}.`)
+    logger.info(`Subscription service is running on port ${server_port}.`)
 })

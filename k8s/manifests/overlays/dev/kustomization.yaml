@@ -1,0 +1,23 @@
+resources:
+- ../../base
+- namespace.yaml
+
+namespace: sns-dev
+
+patches:
+- path: payment.yaml
+- path: subscriptions.yaml
+
+configMapGenerator:
+  - name: subscriptions-config
+    files:
+    - files/subscriptions.config.json
+  - name: payments-config
+    files:
+    - files/payments.config.json
+
+secretGenerator:
+  - name: redis-secret
+    literals:
+      - redis_config=requirepass dev_password
+      - redis_password=dev_password

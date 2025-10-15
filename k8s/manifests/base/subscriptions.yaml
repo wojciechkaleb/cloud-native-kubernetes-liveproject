@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscriptions
+  labels:
+    app: subscriptions
+spec:
+  selector:
+    matchLabels:
+      app: subscriptions
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: subscriptions
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: subscriptions-config
+      containers:
+      - name: subscriptions
+        image: sns-subscriptions:v1.0.0
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: 500m
+          requests:
+            memory: 128Mi
+            cpu: 100m
+        ports:
+        - containerPort: 3001
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+          - name: config
+            mountPath: "/opt/sns/config-files"
+        env:
+          - name: NODE_ENV
+            value: "development"
+          - name: CONFIG_DIR
+            value: "/opt/sns/config-files"
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: redis_password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: subscriptions
+  labels:
+    app: subscriptions
+spec:
+  ports:
+  - port: 3001
+    targetPort: 3001
+  selector:
+    app: subscriptions

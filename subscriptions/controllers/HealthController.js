@@ -1,9 +1,10 @@
 const express = require('express')
 
 class HealthController {
-    constructor(repositories, logger) {
+    constructor(repositories, logger, config) {
         this.repositories = repositories
         this.logger = logger
+        this.config = config
         this.router = express.Router()
         this.setupRoutes()
     }
@@ -32,7 +33,7 @@ class HealthController {
             const healthStatus = {
                 status: 'UP',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 version: process.env.npm_package_version || '1.0.0',
                 uptime: process.uptime()
             }
@@ -44,18 +45,19 @@ class HealthController {
             res.status(503).json({
                 status: 'DOWN',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 error: 'Application is not healthy'
             })
         }
     }
 
     // Readiness probe: Check if the application is ready to serve traffic
-    // This includes checking dependencies like Redis
+    // This includes checking dependencies like Redis and Payments API
     async readiness(req, res) {
         try {
             const checks = {
                 redis: await this.checkRedisConnection(),
+                payments_api: await this.checkPaymentsApiConnection(),
                 service: 'UP'
             }
 
@@ -64,7 +66,7 @@ class HealthController {
             const healthStatus = {
                 status: allChecksPass ? 'UP' : 'DOWN',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 checks: checks
             }
 
@@ -80,7 +82,7 @@ class HealthController {
             res.status(503).json({
                 status: 'DOWN',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 error: 'Service is not ready',
                 details: error.message
             })
@@ -104,7 +106,7 @@ class HealthController {
             const healthStatus = {
                 status: allChecksPass ? 'UP' : 'DOWN',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 version: process.env.npm_package_version || '1.0.0',
                 uptime: process.uptime(),
                 checks: checks
@@ -118,7 +120,7 @@ class HealthController {
             res.status(503).json({
                 status: 'DOWN',
                 timestamp: new Date().toISOString(),
-                service: 'payments',
+                service: 'subscriptions',
                 error: 'Health check failed',
                 details: error.message
             })
@@ -138,23 +140,53 @@ class HealthController {
     // Check Redis connection health
     async checkRedisConnection() {
         try {
-            if (!this.repositories.paymentsRepository || !this.repositories.paymentsRepository.client) {
+            if (!this.repositories.subscriptionsRepository || !this.repositories.subscriptionsRepository.client) {
+                this.logger.warn('Redis client not available')
                 return 'DOWN'
             }
 
-            const client = this.repositories.paymentsRepository.client
+            const client = this.repositories.subscriptionsRepository.client
             
             // Try to ping Redis
             await client.ping()
+            this.logger.debug('Redis health check passed')
             return 'UP'
         } catch (error) {
             this.logger.warn('Redis health check failed', { error: error.message })
             return 'DOWN'
         }
     }
+
+    // Check Payments API connection health
+    async checkPaymentsApiConnection() {
+        try {
+            const axios = require('axios')
+            const paymentsUrl = this.config?.payments_service_url || 'http://payment:3000'
+            
+            this.logger.debug(`Checking payments API health at: ${paymentsUrl}/health/live`)
+            const response = await axios.get(
+                `${paymentsUrl}/health/live`,
+                { timeout: 3000 }
+            )
+            
+            if (response.status === 200) {
+                this.logger.debug('Payments API health check passed')
+                return 'UP'
+            } else {
+                this.logger.warn('Payments API health check failed', { status: response.status })
+                return 'DOWN'
+            }
+        } catch (error) {
+            this.logger.warn('Payments API health check failed', { 
+                error: error.message,
+                url: this.config?.payments_service_url || 'http://payment:3000'
+            })
+            return 'DOWN'
+        }
+    }
 }
 
-module.exports = (repositories, logger) => {
-    const healthController = new HealthController(repositories, logger)
+module.exports = (repositories, logger, config) => {
+    const healthController = new HealthController(repositories, logger, config)
     return healthController.router
 }
