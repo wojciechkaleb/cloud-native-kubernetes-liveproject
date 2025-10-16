@@ -7,4 +7,6 @@ resources:
 - redis.yaml
 - payment.yaml
 - subscriptions.yaml
+- redis-data.yaml
+- ingress.yaml
 
