@@ -18,8 +18,18 @@ spec:
         - name: config
           configMap:
             name: payments-config
+      serviceAccountName: sns-serviceaccount
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
       - name: payment
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1000
         image: sns-payment:v1.0.0
         resources:
           limits:

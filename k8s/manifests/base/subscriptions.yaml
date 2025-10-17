@@ -14,13 +14,23 @@ spec:
       labels:
         app: subscriptions
     spec:
+      serviceAccountName: sns-serviceaccount
       volumes:
         - name: config
           configMap:
             name: subscriptions-config
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
       - name: subscriptions
         image: sns-subscriptions:v1.0.0
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1000
         resources:
           limits:
             memory: 256Mi
